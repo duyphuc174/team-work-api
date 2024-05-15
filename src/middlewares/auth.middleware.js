@@ -46,4 +46,13 @@ const isAuth = async (req, res, next) => {
   }
 };
 
-module.exports = isAuth;
+const isAdmin = async (req, res, next) => {
+  const user = req.user;
+  const u = await db.User.findOne({ where: { id: user.id } });
+  if (u.roleId !== 1) {
+    return res.status(403).json({ message: 'Chỉ admin mới có quyền truy cập!' });
+  }
+  next();
+};
+
+module.exports = { isAuth, isAdmin };

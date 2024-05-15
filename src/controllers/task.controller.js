@@ -20,7 +20,7 @@ const TaskController = {
         assigneeId: assigneeId || user.id,
         important: important || 1,
         deadline: deadline || null,
-        isComplete: false,
+        completed: false,
       });
       if (!task) {
         return res.status(400).json({ message: 'Tạo task không thành công' });
@@ -28,14 +28,14 @@ const TaskController = {
       return res.status(200).json(task);
     } catch (error) {
       console.log(error);
-      return res.status(500).json({ message: 'Tạo task thất bại', error });
+      return res.status(500).json({ message: 'Tạo task thất bại' });
     }
   },
 
   updateTask: async (req, res) => {
     try {
       const { taskId } = req.params;
-      const { title, description, assigneeId, important, deadline, isComplete } = req.body;
+      const { title, description, assigneeId, important, deadline, completed } = req.body;
       const task = await Task.findOne({ where: { id: taskId } });
       if (!task) {
         return res.status(404).json({ message: 'Không tìm thấy task' });
@@ -46,7 +46,7 @@ const TaskController = {
         assigneeId: assigneeId ?? task.assigneeId,
         important: important ?? task.important,
         deadline: deadline ?? task.deadline,
-        isComplete: isComplete ?? task.isComplete,
+        completed: completed ?? task.completed,
       };
       const updateTask = await Task.update(taskUpdate, {
         where: {
@@ -69,7 +69,7 @@ const TaskController = {
       const { workId } = req.query;
       const tasks = await Task.findAll({
         where: { workId },
-        attributes: ['id', 'title', 'description', 'important', 'deadline', 'isComplete'],
+        attributes: ['id', 'title', 'description', 'important', 'deadline', 'completed'],
         include: [{ model: User, as: 'assignee', attributes: ['id', 'firstName', 'lastName', 'email', 'avatar'] }],
       });
       if (!tasks) {

@@ -1,8 +1,7 @@
 'use strict';
 const { Model } = require('sequelize');
-const User = require('./user');
 module.exports = (sequelize, DataTypes) => {
-  class Workspace extends Model {
+  class WorkFileStorage extends Model {
     /**
      * Helper method for defining associations.
      * This method is not a part of Sequelize lifecycle.
@@ -10,23 +9,22 @@ module.exports = (sequelize, DataTypes) => {
      */
     static associate(models) {
       // define association here
-      Workspace.belongsTo(models.User, { foreignKey: 'creatorId', targetKey: 'id', as: 'creator' });
-      Workspace.hasMany(models.Member, { foreignKey: 'workspaceId', sourceKey: 'id', as: 'members' });
+      WorkFileStorage.belongsTo(models.Work, { foreignKey: 'workId', targetKey: 'id', as: 'work' });
     }
   }
-  Workspace.init(
+  WorkFileStorage.init(
     {
+      link: DataTypes.STRING,
+      workId: DataTypes.INTEGER,
       name: DataTypes.STRING,
-      description: DataTypes.STRING,
-      creatorId: DataTypes.INTEGER,
+      type: DataTypes.STRING,
     },
     {
       sequelize,
-      modelName: 'Workspace',
+      modelName: 'WorkFileStorage',
       paranoid: true,
       deletedAt: 'deletedAt',
     },
   );
-
-  return Workspace;
+  return WorkFileStorage;
 };

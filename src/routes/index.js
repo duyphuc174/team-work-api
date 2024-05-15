@@ -8,7 +8,7 @@ const memberRouter = require('./member.router');
 const taskRouter = require('./task.router');
 const sprintRouter = require('./sprint.router');
 const commentRouter = require('./comment.router');
-const isAuth = require('./../middlewares/auth.middleware');
+const { isAuth } = require('./../middlewares/auth.middleware');
 
 const initRoutes = (app) => {
   app.use('/auth', authRouter);

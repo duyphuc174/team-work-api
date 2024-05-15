@@ -15,4 +15,7 @@ router.get('/:workspaceId/users', WorkspaceController.findUsers);
 router.post('/:workspaceId/sprints', isWorkspaceAdmin, WorkspaceController.createSprint);
 router.get('/:workspaceId/sprints', WorkspaceController.getSprints);
 
+//Task
+router.get('/:workspaceId/tasks', WorkspaceController.getTasks);
+
 module.exports = router;

@@ -7,10 +7,12 @@ const uploadController = {
 
       const uploadFiles = await Promise.all(
         files.map(async (file) => {
-          const { originalname, path } = file;
+          console.log(file);
+          const { originalname, path, mimetype } = file;
           return {
             originalname,
             path,
+            type: mimetype,
           };
         }),
       );

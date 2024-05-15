@@ -1,5 +1,6 @@
 const { where, Op } = require('sequelize');
 const db = require('../models');
+const { getTasks } = require('./task.controller');
 const Workspace = db.Workspace;
 const Member = db.Member;
 const User = db.User;
@@ -255,6 +256,40 @@ const WorkspaceController = {
         where: { workspaceId },
       });
       return res.status(200).json(sprints);
+    } catch (error) {
+      console.log(error);
+      return res.status(500).json({ message: 'Lỗi truy cập!' });
+    }
+  },
+
+  getTasks: async (req, res) => {
+    try {
+      const user = req.user;
+      const { workspaceId } = req.params;
+
+      const tasks = await db.Task.findAll({
+        where: {
+          assigneeId: user.id,
+        },
+        attributes: ['id', 'title', 'description', 'important', 'deadline', 'completed'],
+        include: [
+          {
+            model: User,
+            as: 'assignee',
+            attributes: ['id', 'firstName', 'lastName', 'email', 'avatar'],
+          },
+          {
+            model: db.Work,
+            where: { id: workspaceId },
+            as: 'work',
+          },
+        ],
+      });
+
+      if (!tasks) {
+        return res.status(404).json({ message: 'Không tìm thấy task' });
+      }
+      return res.status(200).json(tasks);
     } catch (error) {
       console.log(error);
       return res.status(500).json({ message: 'Lỗi truy cập!' });

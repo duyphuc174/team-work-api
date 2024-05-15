@@ -22,10 +22,18 @@ module.exports = {
       workspaceId: {
         type: Sequelize.INTEGER,
         allowNull: false,
+        references: {
+          model: 'Workspaces',
+          key: 'id',
+        },
       },
       creatorId: {
         type: Sequelize.INTEGER,
         allowNull: false,
+        references: {
+          model: 'Users',
+          key: 'id',
+        },
       },
       createdAt: {
         allowNull: false,

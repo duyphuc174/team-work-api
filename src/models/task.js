@@ -21,7 +21,7 @@ module.exports = (sequelize, DataTypes) => {
       deadline: DataTypes.DATE,
       assigneeId: DataTypes.INTEGER,
       important: DataTypes.INTEGER,
-      isComplete: DataTypes.BOOLEAN,
+      completed: DataTypes.BOOLEAN,
       workId: DataTypes.INTEGER,
     },
     {

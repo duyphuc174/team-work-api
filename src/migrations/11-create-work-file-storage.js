@@ -2,24 +2,33 @@
 /** @type {import('sequelize-cli').Migration} */
 module.exports = {
   async up(queryInterface, Sequelize) {
-    await queryInterface.createTable('Comments', {
+    await queryInterface.createTable('WorkFileStorages', {
       id: {
         allowNull: false,
         autoIncrement: true,
         primaryKey: true,
         type: Sequelize.INTEGER,
       },
-      creatorId: {
-        type: Sequelize.INTEGER,
+      link: {
+        type: Sequelize.STRING,
         allowNull: false,
       },
-      content: {
-        type: Sequelize.STRING(500),
+      name: {
+        type: Sequelize.STRING,
         allowNull: false,
       },
-      taskId: {
+      type: {
+        type: Sequelize.STRING,
+        allowNull: false,
+        defaultValue: 'image',
+      },
+      workId: {
         type: Sequelize.INTEGER,
         allowNull: false,
+        references: {
+          model: 'Works',
+          key: 'id',
+        },
       },
       createdAt: {
         allowNull: false,
@@ -38,6 +47,6 @@ module.exports = {
     });
   },
   async down(queryInterface, Sequelize) {
-    await queryInterface.dropTable('Comments');
+    await queryInterface.dropTable('WorkFileStorages');
   },
 };

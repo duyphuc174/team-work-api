@@ -2,27 +2,48 @@
 /** @type {import('sequelize-cli').Migration} */
 module.exports = {
   async up(queryInterface, Sequelize) {
-    await queryInterface.createTable('Workspaces', {
+    await queryInterface.createTable('Tasks', {
       id: {
         allowNull: false,
         autoIncrement: true,
         primaryKey: true,
         type: Sequelize.INTEGER,
       },
-      name: {
+      title: {
         type: Sequelize.STRING,
         allowNull: false,
       },
       description: {
         type: Sequelize.STRING(500),
       },
-      isActive: {
-        type: Sequelize.BOOLEAN,
-        defaultValue: true,
+      deadline: {
+        type: Sequelize.DATE,
       },
-      creatorId: {
+      assigneeId: {
         type: Sequelize.INTEGER,
         allowNull: false,
+        references: {
+          model: 'Users',
+          key: 'id',
+        },
+      },
+      important: {
+        type: Sequelize.INTEGER,
+        allowNull: false,
+        defaultValue: 1,
+      },
+      completed: {
+        type: Sequelize.BOOLEAN,
+        allowNull: false,
+        defaultValue: false,
+      },
+      workId: {
+        type: Sequelize.INTEGER,
+        allowNull: false,
+        references: {
+          model: 'Works',
+          key: 'id',
+        },
       },
       createdAt: {
         allowNull: false,
@@ -41,6 +62,6 @@ module.exports = {
     });
   },
   async down(queryInterface, Sequelize) {
-    await queryInterface.dropTable('Workspaces');
+    await queryInterface.dropTable('Tasks');
   },
 };

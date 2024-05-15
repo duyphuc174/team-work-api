@@ -30,14 +30,26 @@ module.exports = {
       sprintId: {
         type: Sequelize.INTEGER,
         allowNull: false,
+        references: {
+          model: 'Sprints',
+          key: 'id',
+        },
       },
       importantId: {
         type: Sequelize.INTEGER,
         allowNull: false,
+        references: {
+          model: 'Importants',
+          key: 'id',
+        },
       },
       followerId: {
         type: Sequelize.INTEGER,
         allowNull: false,
+        references: {
+          model: 'Users',
+          key: 'id',
+        },
       },
       createdAt: {
         allowNull: false,

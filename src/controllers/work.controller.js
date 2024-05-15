@@ -1,11 +1,10 @@
 const { Op, where } = require('sequelize');
 const db = require('../models');
+const { link } = require('../routes/work.router');
 const Work = db.Work;
-const Workspace = db.Workspace;
 const User = db.User;
 const Important = db.Important;
 const Sprint = db.Sprint;
-const Member = db.Member;
 
 const WorkController = {
   createWork: async (req, res) => {
@@ -100,6 +99,11 @@ const WorkController = {
             attributes: ['id', 'name'],
             as: 'sprint',
           },
+          {
+            model: db.WorkFileStorage,
+            attributes: ['id', 'name', 'link', 'type'],
+            as: 'files',
+          },
         ],
       });
       if (!work) {
@@ -116,7 +120,7 @@ const WorkController = {
     try {
       const user = req.user;
       const { workId } = req.params;
-      const { title, endDate, startDate, importantId, description, sprintId, followerId } = req.body;
+      const { title, endDate, startDate, importantId, description, sprintId, followerId, status } = req.body;
 
       const work = await Work.findOne({
         where: {
@@ -132,11 +136,13 @@ const WorkController = {
         title: title ?? work.title,
         endDate: endDate ?? work.endDate,
         startDate: startDate ?? work.startDate,
-        importantId: +importantId ?? work.importantId,
+        importantId: importantId ? +importantId : work.importantId,
         description: description ?? work.description,
-        sprintId: +sprintId ?? work.sprintId,
-        followerId: +followerId ?? work.followerId,
+        sprintId: sprintId ? +sprintId : work.sprintId,
+        followerId: followerId ? +followerId : work.followerId,
+        status: status ?? work.status,
       };
+
       const updateWork = await Work.update(workUpdate, {
         where: {
           id: workId,
@@ -171,6 +177,37 @@ const WorkController = {
         },
       });
       return res.status(200).json(workDelete);
+    } catch (error) {
+      console.log(error);
+      return res.status(500).json({ message: 'Có lỗi xảy ra!' });
+    }
+  },
+
+  addFiles: async (req, res) => {
+    try {
+      const { workId } = req.params;
+      const { files } = req.body;
+
+      const work = await Work.findOne({
+        where: {
+          id: workId,
+        },
+      });
+
+      if (!work) {
+        return res.status(404).json({ message: 'Không tìm thấy công việc!' });
+      }
+
+      files.forEach((file) => {
+        db.WorkFileStorage.create({
+          workId: work.id,
+          link: file.path,
+          name: file.name,
+          type: file.type,
+        });
+      });
+
+      return res.status(200).json({ message: 'Thêm files thành công', success: true });
     } catch (error) {
       console.log(error);
       return res.status(500).json({ message: 'Có lỗi xảy ra!' });

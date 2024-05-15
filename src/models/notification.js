@@ -1,8 +1,7 @@
 'use strict';
 const { Model } = require('sequelize');
-const User = require('./user');
 module.exports = (sequelize, DataTypes) => {
-  class Workspace extends Model {
+  class Notification extends Model {
     /**
      * Helper method for defining associations.
      * This method is not a part of Sequelize lifecycle.
@@ -10,23 +9,23 @@ module.exports = (sequelize, DataTypes) => {
      */
     static associate(models) {
       // define association here
-      Workspace.belongsTo(models.User, { foreignKey: 'creatorId', targetKey: 'id', as: 'creator' });
-      Workspace.hasMany(models.Member, { foreignKey: 'workspaceId', sourceKey: 'id', as: 'members' });
+      Notification.belongsTo(models.User, { foreignKey: 'receiverId', targetKey: 'id', as: 'receiver' });
     }
   }
-  Workspace.init(
+  Notification.init(
     {
-      name: DataTypes.STRING,
-      description: DataTypes.STRING,
-      creatorId: DataTypes.INTEGER,
+      content: DataTypes.STRING,
+      receiverId: DataTypes.INTEGER,
+      link: DataTypes.STRING,
+      type: DataTypes.STRING,
+      read: DataTypes.BOOLEAN,
     },
     {
       sequelize,
-      modelName: 'Workspace',
+      modelName: 'Notification',
       paranoid: true,
       deletedAt: 'deletedAt',
     },
   );
-
-  return Workspace;
+  return Notification;
 };

@@ -9,5 +9,6 @@ router.get('/sprint/:sprintId', WorkController.getWorksBySprintId);
 router.post('/:workId', canEditWork, WorkController.updateWork);
 router.delete('/:workId', canEditWork, WorkController.deleteWork);
 router.get('/:workId', WorkController.getWorkById);
+router.post('/:workId/files', canEditWork, WorkController.addFiles);
 
 module.exports = router;

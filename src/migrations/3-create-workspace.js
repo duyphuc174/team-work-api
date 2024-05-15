@@ -2,19 +2,32 @@
 /** @type {import('sequelize-cli').Migration} */
 module.exports = {
   async up(queryInterface, Sequelize) {
-    await queryInterface.createTable('Importants', {
+    await queryInterface.createTable('Workspaces', {
       id: {
         allowNull: false,
         autoIncrement: true,
         primaryKey: true,
         type: Sequelize.INTEGER,
       },
-      level: {
+      name: {
+        type: Sequelize.STRING,
+        allowNull: false,
+      },
+      description: {
+        type: Sequelize.STRING(500),
+      },
+      // isActive: {
+      //   type: Sequelize.BOOLEAN,
+      //   defaultValue: true,
+      // },
+      creatorId: {
         type: Sequelize.INTEGER,
         allowNull: false,
-        defaultValue: 1,
+        references: {
+          model: 'Users',
+          key: 'id',
+        },
       },
-
       createdAt: {
         allowNull: false,
         type: Sequelize.DATE,
@@ -32,6 +45,6 @@ module.exports = {
     });
   },
   async down(queryInterface, Sequelize) {
-    await queryInterface.dropTable('Importants');
+    await queryInterface.dropTable('Workspaces');
   },
 };
