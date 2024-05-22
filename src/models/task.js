@@ -12,6 +12,7 @@ module.exports = (sequelize, DataTypes) => {
       Task.belongsTo(models.User, { foreignKey: 'assigneeId', targetKey: 'id', as: 'assignee' });
       Task.belongsTo(models.Work, { foreignKey: 'workId', targetKey: 'id', as: 'work' });
       Task.hasMany(models.Comment, { foreignKey: 'taskId', sourceKey: 'id', as: 'comments' });
+      Task.hasMany(models.TaskFileStorage, { foreignKey: 'taskId', sourceKey: 'id', as: 'files' });
     }
   }
   Task.init(

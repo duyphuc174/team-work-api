@@ -1,6 +1,7 @@
 const { Op, where } = require('sequelize');
 const db = require('../models');
-const { link } = require('../routes/work.router');
+const NotificationService = require('../services/notification.service');
+const WorkService = require('../services/work.service');
 const Work = db.Work;
 const User = db.User;
 const Important = db.Important;
@@ -109,7 +110,15 @@ const WorkController = {
       if (!work) {
         return res.status(404).json({ message: 'Không tìm thấy!' });
       }
-      return res.status(200).json(work);
+      const workResponse = work.get({ plain: true });
+
+      const tasksCount = await db.Task.count({ where: { workId } });
+      if (tasksCount !== 0) {
+        workResponse.tasksCount = tasksCount;
+      }
+      const tasksCompletedCount = await db.Task.count({ where: { workId, completed: true } });
+      workResponse.tasksCompletedCount = tasksCompletedCount;
+      return res.status(200).json(workResponse);
     } catch (error) {
       console.log(error);
       return res.status(500).json({ message: 'Có lỗi xảy ra!' });
@@ -126,6 +135,18 @@ const WorkController = {
         where: {
           id: workId,
         },
+        include: [
+          {
+            model: db.Sprint,
+            as: 'sprint',
+            include: [
+              {
+                model: db.Workspace,
+                as: 'workspace',
+              },
+            ],
+          },
+        ],
       });
 
       if (!work) {
@@ -152,10 +173,49 @@ const WorkController = {
       if (!updateWork) {
         return res.status(500).json({ message: 'Không thể lưu' });
       }
-      if (updateWork.length) {
-        return res.status(200).json({ success: true });
+
+      // Lấy danh sách thành viên
+      const workspaceId = work.sprint.workspace.id;
+      const members = await db.Member.findAll({
+        where: { workspaceId: workspaceId },
+        include: [{ model: User, as: 'user' }],
+      });
+      // Lọc danh sách userId của member
+      const userIds = await members.map((member) => member.user.id);
+
+      // Tạo notification cho member
+      if (!status) {
+        userIds.forEach((userId) => {
+          if (userId === user.id) {
+            return;
+          }
+          NotificationService.createNotification({
+            content: `[${user.firstName} ${user.lastName}] đã cập nhật công việc [${work.title}]`,
+            type: 'work',
+            link: `/workspaces/${workspaceId}/works/${work.id}`,
+            receiverId: userId,
+            senderId: user.id,
+            workspaceId: workspaceId,
+          });
+        });
+      } else {
+        const stt = status === 'open' ? 'mở lại' : 'hoàn thành';
+        userIds.forEach((userId) => {
+          if (userId === user.id) {
+            return;
+          }
+          NotificationService.createNotification({
+            content: `[${user.firstName} ${user.lastName}] đã ${stt} công việc [${work.title}]`,
+            type: 'work',
+            link: `/workspaces/${workspaceId}/works/${work.id}`,
+            receiverId: userId,
+            senderId: user.id,
+            workspaceId: workspaceId,
+          });
+        });
       }
-      return res.status(404).json({ message: 'Không tìm thấy!' });
+
+      return res.status(200).json({ message: 'Cập nhật thành công!', success: true });
     } catch (error) {
       console.log(error);
       return res.status(500).json({ message: 'Có lỗi xảy ra!' });
@@ -171,11 +231,7 @@ const WorkController = {
           id: workId,
         },
       });
-      const workDelete = await Work.destroy({
-        where: {
-          id: workId,
-        },
-      });
+      const workDelete = await WorkService.deleteWork(work.id);
       return res.status(200).json(workDelete);
     } catch (error) {
       console.log(error);
@@ -185,6 +241,7 @@ const WorkController = {
 
   addFiles: async (req, res) => {
     try {
+      const user = req.user;
       const { workId } = req.params;
       const { files } = req.body;
 
@@ -192,6 +249,18 @@ const WorkController = {
         where: {
           id: workId,
         },
+        include: [
+          {
+            model: db.Sprint,
+            as: 'sprint',
+            include: [
+              {
+                model: db.Workspace,
+                as: 'workspace',
+              },
+            ],
+          },
+        ],
       });
 
       if (!work) {
@@ -207,7 +276,57 @@ const WorkController = {
         });
       });
 
+      // Lấy danh sách thành viên
+      const workspaceId = work.sprint.workspace.id;
+      const members = await db.Member.findAll({
+        where: { workspaceId: workspaceId },
+        include: [{ model: User, as: 'user' }],
+      });
+      // Lọc danh sách userId của member
+      const userIds = await members.map((member) => member.user.id);
+
+      // Tạo notification cho member
+      userIds.forEach((userId) => {
+        if (userId === user.id) {
+          return;
+        }
+        NotificationService.createNotification({
+          content: `[${user.firstName} ${user.lastName}] đã thêm tệp đính kèm cho công việc [${work.title}]`,
+          type: 'work',
+          link: `/workspaces/${workspaceId}/works/${work.id}`,
+          receiverId: userId,
+          senderId: user.id,
+          workspaceId: workspaceId,
+        });
+      });
+
       return res.status(200).json({ message: 'Thêm files thành công', success: true });
+    } catch (error) {
+      console.log(error);
+      return res.status(500).json({ message: 'Có lỗi xảy ra!' });
+    }
+  },
+
+  deleteFile: async (req, res) => {
+    try {
+      const { fileId } = req.params;
+      const workFile = await db.WorkFileStorage.findOne({
+        where: {
+          id: fileId,
+        },
+      });
+      if (!workFile) {
+        return res.status(404).json({ message: 'Không tìm thấy file!' });
+      }
+      const workFileDelete = await db.WorkFileStorage.destroy({
+        where: {
+          id: workFile.id,
+        },
+      });
+      if (!workFileDelete) {
+        return res.status(404).json({ message: 'Xóa file không thành công!' });
+      }
+      return res.status(200).json({ message: 'Xóa file thành công!', success: true });
     } catch (error) {
       console.log(error);
       return res.status(500).json({ message: 'Có lỗi xảy ra!' });

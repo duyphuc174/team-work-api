@@ -18,4 +18,7 @@ router.get('/:workspaceId/sprints', WorkspaceController.getSprints);
 //Task
 router.get('/:workspaceId/tasks', WorkspaceController.getTasks);
 
+// Notification
+router.get('/:workspaceId/notifications', WorkspaceController.getNotifications);
+
 module.exports = router;

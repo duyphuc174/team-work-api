@@ -12,6 +12,7 @@ module.exports = (sequelize, DataTypes) => {
       // define association here
       Workspace.belongsTo(models.User, { foreignKey: 'creatorId', targetKey: 'id', as: 'creator' });
       Workspace.hasMany(models.Member, { foreignKey: 'workspaceId', sourceKey: 'id', as: 'members' });
+      Workspace.hasMany(models.Notification, { foreignKey: 'workspaceId', sourceKey: 'id', as: 'notifications' });
     }
   }
   Workspace.init(

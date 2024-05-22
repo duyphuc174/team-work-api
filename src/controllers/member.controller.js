@@ -1,5 +1,6 @@
 const { where, Op } = require('sequelize');
 const db = require('../models');
+const NotificationService = require('../services/notification.service');
 const Member = db.Member;
 const User = db.User;
 
@@ -7,6 +8,7 @@ const MemberController = {
   getMembersByWorkspaceId: async (req, res) => {
     try {
       const { workspaceId } = req.params;
+      const { find } = req.query;
 
       const members = await Member.findAll({
         where: { workspaceId },
@@ -14,6 +16,13 @@ const MemberController = {
           model: User,
           attributes: ['id', 'firstName', 'lastName', 'avatar', 'email', 'phoneNumber'],
           as: 'user',
+          where: {
+            [Op.or]: [
+              { firstName: { [Op.like]: `%${find || ''}%` } },
+              { lastName: { [Op.like]: `%${find || ''}%` } },
+              { email: { [Op.like]: `%${find || ''}%` } },
+            ],
+          },
         },
         attributes: ['id', 'role'],
       });

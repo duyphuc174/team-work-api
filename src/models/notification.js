@@ -10,15 +10,19 @@ module.exports = (sequelize, DataTypes) => {
     static associate(models) {
       // define association here
       Notification.belongsTo(models.User, { foreignKey: 'receiverId', targetKey: 'id', as: 'receiver' });
+      Notification.belongsTo(models.User, { foreignKey: 'senderId', targetKey: 'id', as: 'sender' });
+      Notification.belongsTo(models.Workspace, { foreignKey: 'workspaceId', targetKey: 'id', as: 'workspace' });
     }
   }
   Notification.init(
     {
       content: DataTypes.STRING,
-      receiverId: DataTypes.INTEGER,
       link: DataTypes.STRING,
       type: DataTypes.STRING,
       read: DataTypes.BOOLEAN,
+      receiverId: DataTypes.INTEGER,
+      senderId: DataTypes.INTEGER,
+      workspaceId: DataTypes.INTEGER,
     },
     {
       sequelize,

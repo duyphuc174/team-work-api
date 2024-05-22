@@ -1,6 +1,7 @@
 const { where, Op } = require('sequelize');
 const db = require('../models');
-const { getTasks } = require('./task.controller');
+const NotificationService = require('../services/notification.service');
+const SprintService = require('../services/sprint.service');
 const Workspace = db.Workspace;
 const Member = db.Member;
 const User = db.User;
@@ -152,6 +153,9 @@ const WorkspaceController = {
       if (!deleted) {
         return res.json({ message: 'Xóa thất bại!' });
       }
+      const sprints = await Sprint.findAll({ where: { workspaceId: workspaceId } });
+      const sprintIds = sprints.map((sprint) => sprint.id);
+      await SprintService.deleteSprints(sprintIds);
       return res.status(200).json({ message: 'Xoá workspace thành công', success: true });
     } catch (error) {
       console.log(error);
@@ -179,8 +183,8 @@ const WorkspaceController = {
       }
 
       for (let userId of userIds) {
-        const user = await User.findOne({ where: { id: userId } });
-        if (!user) {
+        const u = await User.findOne({ where: { id: userId } });
+        if (!u) {
           continue;
         }
         const m = await Member.findOne({ where: { userId, workspaceId } });
@@ -190,6 +194,15 @@ const WorkspaceController = {
         await Member.create({
           workspaceId: workspace.id,
           userId: userId,
+        });
+
+        NotificationService.createNotification({
+          content: `[${user.firstName} ${user.lastName}] đã thêm bạn vào nhóm [${workspace.name}]`,
+          link: `/workspaces/${workspace.id}`,
+          type: 'member',
+          receiverId: userId,
+          senderId: user.id,
+          workspaceId: workspace.id,
         });
       }
 
@@ -266,11 +279,46 @@ const WorkspaceController = {
     try {
       const user = req.user;
       const { workspaceId } = req.params;
+      const { sortBy, find, completed } = req.query;
+
+      const works = await db.Work.findAll({
+        include: [
+          {
+            model: db.Sprint,
+            where: {
+              workspaceId,
+            },
+            as: 'sprint',
+          },
+        ],
+      });
+      const workIds = works.map((work) => work.id);
+
+      let order = [];
+      if (sortBy) {
+        if (sortBy === 'important') {
+          order = ['important', 'DESC'];
+        }
+        if (sortBy === 'deadline') {
+          order = ['deadline', 'DESC'];
+        }
+      } else {
+        order = ['id', 'ASC'];
+      }
+
+      const condition = {
+        assigneeId: user.id,
+      };
+      if (completed) {
+        condition.completed = completed === 'true' ? true : false;
+      }
 
       const tasks = await db.Task.findAll({
         where: {
-          assigneeId: user.id,
+          ...condition,
+          title: { [Op.like]: `%${find || ''}%` },
         },
+        order: [['completed', 'ASC'], order],
         attributes: ['id', 'title', 'description', 'important', 'deadline', 'completed'],
         include: [
           {
@@ -280,7 +328,12 @@ const WorkspaceController = {
           },
           {
             model: db.Work,
-            where: { id: workspaceId },
+            where: {
+              id: {
+                [Op.in]: workIds || [],
+              },
+            },
+            attributes: ['id', 'title'],
             as: 'work',
           },
         ],
@@ -294,6 +347,50 @@ const WorkspaceController = {
       console.log(error);
       return res.status(500).json({ message: 'Lỗi truy cập!' });
     }
+  },
+
+  getNotifications: async (req, res) => {
+    try {
+      const user = req.user;
+      const { workspaceId } = req.params;
+      const { limit, offset, type } = req.query;
+
+      const read = type === 'read' ? true : false;
+
+      const notifications = await db.Notification.findAll({
+        where: {
+          receiverId: user.id,
+          workspaceId,
+          read,
+        },
+        limit: limit || 10,
+        offset: offset || 0,
+        order: [['createdAt', 'DESC']],
+        attributes: ['id', 'content', 'read', 'workspaceId', 'type', 'link', 'createdAt'],
+      });
+
+      const notiReadCount = await db.Notification.count({
+        where: {
+          receiverId: user.id,
+          workspaceId,
+          read: true,
+        },
+      });
+
+      const notiUnreadCount = await db.Notification.count({
+        where: {
+          receiverId: user.id,
+          workspaceId,
+          read: false,
+        },
+      });
+
+      if (!notifications) {
+        return res.status(404).json({ message: 'Không tìm thấy notifications!' });
+      }
+
+      return res.status(200).json({ notifications, notiReadCount, notiUnreadCount });
+    } catch (error) {}
   },
 };
 

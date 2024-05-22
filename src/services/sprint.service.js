@@ -1,5 +1,5 @@
-const { createSprint } = require('../controllers/workspace.controller');
 const db = require('../models');
+const WorkService = require('./work.service');
 
 const SprintService = {
   createSprint: async (user, body) => {
@@ -32,6 +32,30 @@ const SprintService = {
       attributes,
     });
     return sprint;
+  },
+
+  deleteSprint: async (sprintId) => {
+    const sprintDelete = await db.Sprint.destroy({ where: { id: sprintId } });
+    const works = await db.Work.findAll({ where: { sprintId } });
+    const workIds = works.map((work) => work.id);
+    await WorkService.deleteWorks(workIds);
+    if (!sprintDelete) {
+      return null;
+    }
+    return { message: 'Xoá sprint thành công!', success: true };
+  },
+
+  deleteSprints: async (sprintIds) => {
+    const sprintDeleted = sprintIds.forEach(async (sprintId) => {
+      const sprintDelete = await db.Sprint.destroy({ where: { id: sprintId } });
+      const works = await db.Work.findAll({ where: { sprintId } });
+      const workIds = works.map((work) => work.id);
+      await WorkService.deleteWorks(workIds);
+    });
+    if (!sprintDeleted) {
+      return null;
+    }
+    return { message: 'Xoá sprint thành công!', success: true };
   },
 };
 

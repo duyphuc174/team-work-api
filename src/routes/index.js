@@ -8,6 +8,7 @@ const memberRouter = require('./member.router');
 const taskRouter = require('./task.router');
 const sprintRouter = require('./sprint.router');
 const commentRouter = require('./comment.router');
+const notificationRouter = require('./notification.router');
 const { isAuth } = require('./../middlewares/auth.middleware');
 
 const initRoutes = (app) => {
@@ -20,6 +21,7 @@ const initRoutes = (app) => {
   app.use('/tasks', isAuth, taskRouter);
   app.use('/sprints', isAuth, sprintRouter);
   app.use('/comments', isAuth, commentRouter);
+  app.use('/notifications', isAuth, notificationRouter);
 
   app.use('/uploads', isAuth, uploadRouter);
 };

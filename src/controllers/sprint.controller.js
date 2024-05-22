@@ -92,7 +92,7 @@ const SprintController = {
         return res.status(403).json({ message: 'Bạn không có quyền truy cập!' });
       }
 
-      const sprintDelete = await db.Sprint.destroy({ where: { id: sprintId } });
+      const sprintDelete = await SprintService.deleteSprint(sprint.id);
       if (!sprintDelete) {
         return res.status(500).json({ message: 'Không thể xóa sprint!' });
       }

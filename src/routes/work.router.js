@@ -10,5 +10,6 @@ router.post('/:workId', canEditWork, WorkController.updateWork);
 router.delete('/:workId', canEditWork, WorkController.deleteWork);
 router.get('/:workId', WorkController.getWorkById);
 router.post('/:workId/files', canEditWork, WorkController.addFiles);
+router.delete('/:workId/files/:fileId', canEditWork, WorkController.deleteFile);
 
 module.exports = router;

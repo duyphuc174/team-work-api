@@ -16,6 +16,7 @@ module.exports = (sequelize, DataTypes) => {
       User.hasMany(models.Task, { foreignKey: 'assigneeId', sourceKey: 'id', as: 'tasks' });
       User.hasMany(models.Comment, { foreignKey: 'creatorId', sourceKey: 'id', as: 'comments' });
       User.hasMany(models.Notification, { foreignKey: 'receiverId', sourceKey: 'id', as: 'notifications' });
+      User.hasMany(models.Notification, { foreignKey: 'senderId', sourceKey: 'id', as: 'noti' });
     }
   }
   User.init(
