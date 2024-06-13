@@ -12,13 +12,15 @@ const WorkspaceController = {
     const user = req.user;
     try {
       const workspaceList = await Workspace.findAll({
-        attributes: { exclude: ['deletedAt', 'creatorId'] },
+        attributes: {
+          exclude: ['deletedAt', 'creatorId'],
+        },
         include: [
           {
             model: Member,
             where: { userId: user.id },
             attributes: { exclude: ['userId', 'workspaceId', 'deletedAt'] },
-            as: 'members',
+            as: 'myInfo',
             include: {
               model: User,
               attributes: ['id', 'firstName', 'lastName', 'email', 'avatar'],
@@ -102,6 +104,12 @@ const WorkspaceController = {
             model: User,
             attributes: ['id', 'firstName', 'lastName', 'email', 'avatar'],
             as: 'creator',
+          },
+          {
+            model: db.Member,
+            attributes: ['id', 'role'],
+            as: 'myInfo',
+            where: { userId: user.id },
           },
         ],
       });
@@ -363,8 +371,8 @@ const WorkspaceController = {
           workspaceId,
           read,
         },
-        limit: limit || 10,
-        offset: offset || 0,
+        limit: +limit || 10,
+        offset: +offset || 0,
         order: [['createdAt', 'DESC']],
         attributes: ['id', 'content', 'read', 'workspaceId', 'type', 'link', 'createdAt'],
       });

@@ -13,7 +13,8 @@ const authController = {
     try {
       const body = req.body;
 
-      const userCreated = UserService.createUser(body);
+      const userCreated = await UserService.createUser(body);
+      console.log(userCreated);
       if (!userCreated) {
         return res.status(500).json({ message: 'Đăng ký thất bại!' });
       }

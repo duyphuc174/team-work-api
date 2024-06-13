@@ -14,6 +14,7 @@ module.exports = (sequelize, DataTypes) => {
       Work.belongsTo(models.User, { foreignKey: 'followerId', targetKey: 'id', as: 'follower' });
       Work.hasMany(models.Task, { foreignKey: 'workId', sourceKey: 'id', as: 'tasks' });
       Work.hasMany(models.WorkFileStorage, { foreignKey: 'workId', sourceKey: 'id', as: 'files' });
+      Work.hasMany(models.WorkAssignee, { foreignKey: 'workId', sourceKey: 'id', as: 'assignees' });
     }
   }
   Work.init(
@@ -23,6 +24,7 @@ module.exports = (sequelize, DataTypes) => {
       endDate: DataTypes.DATE,
       status: DataTypes.STRING,
       description: DataTypes.STRING,
+      isPublic: DataTypes.BOOLEAN,
       sprintId: DataTypes.INTEGER,
       importantId: DataTypes.INTEGER,
       followerId: DataTypes.INTEGER,

@@ -6,6 +6,7 @@ const UserController = require('../controllers/user.controller');
 
 router.get('/search', UserController.searchUsers);
 router.post('/information', UserController.updateInformation);
+router.get('/information/:userId', UserController.getListCommonWorkspaces);
 
 // Admin edit users
 router.post('', isAdmin, UserController.createUser);

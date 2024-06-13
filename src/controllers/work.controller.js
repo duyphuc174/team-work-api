@@ -10,7 +10,8 @@ const Sprint = db.Sprint;
 const WorkController = {
   createWork: async (req, res) => {
     const user = req.user;
-    const { title, endDate, startDate, importantId, description, sprintId, followerId } = req.body;
+    const { title, endDate, startDate, importantId, description, sprintId, followerId, isPublic, assigneeIds } =
+      req.body;
     try {
       const userLogged = await db.User.findOne({
         where: {
@@ -25,10 +26,41 @@ const WorkController = {
         importantId,
         sprintId: +sprintId,
         followerId: +followerId || userLogged.id,
+        isPublic: isPublic === null || isPublic === undefined ? true : false,
       });
 
       if (!work) {
         return res.status(500).json({ message: 'Không thể tạo công việc' });
+      }
+      const sprint = await db.Sprint.findOne({
+        where: {
+          id: work.sprintId,
+        },
+      });
+      const workspaceId = sprint.workspaceId;
+
+      if (assigneeIds && assigneeIds.length) {
+        const assigneesCreate = assigneeIds;
+        await db.WorkAssignee.bulkCreate(
+          assigneeIds.map((assigneeId) => ({
+            workId: work.id,
+            userId: assigneeId,
+          })),
+          { updateOnDuplicate: ['workId', 'userId'] },
+        );
+
+        assigneesCreate
+          .filter((assigneeId) => assigneeId !== userLogged.id)
+          .forEach((assigneeId) => {
+            NotificationService.createNotification({
+              content: `[${user.firstName} ${user.lastName}] đã thêm bạn vào công việc [${work.title}]`,
+              link: `/workspaces/${workspaceId}/works/${work.id}`,
+              type: 'work',
+              receiverId: assigneeId,
+              senderId: userLogged.id,
+              workspaceId: workspaceId,
+            });
+          });
       }
       return res.status(200).json(work);
     } catch (error) {
@@ -40,7 +72,7 @@ const WorkController = {
   getWorksBySprintId: async (req, res) => {
     try {
       const { sprintId } = req.params;
-      const { sortBy, sortType, search } = req.query;
+      const { sortBy, sortType, search, assigneeId, isPublic } = req.query;
 
       let order = [];
       if (sortBy) {
@@ -49,12 +81,22 @@ const WorkController = {
         order = [['id']];
       }
 
+      const whereClause = {
+        sprintId,
+        [Op.or]: [{ title: { [Op.like]: `%${search || ''}%` } }],
+      };
+
+      if (assigneeId) {
+        whereClause['$assignees.userId$'] = assigneeId;
+      }
+
+      if (isPublic) {
+        whereClause['isPublic'] = true;
+      }
+
       const works = await Work.findAll({
-        where: {
-          sprintId,
-          [Op.or]: [{ title: { [Op.like]: `%${search || ''}%` } }],
-        },
-        attributes: ['id', 'title', 'description', 'endDate', 'startDate', 'status'],
+        where: whereClause,
+        attributes: ['id', 'title', 'description', 'endDate', 'startDate', 'status', 'isPublic'],
         include: [
           {
             model: User,
@@ -65,6 +107,18 @@ const WorkController = {
             model: Important,
             attributes: ['id', 'level'],
             as: 'important',
+          },
+          {
+            model: db.WorkAssignee,
+            attributes: ['id'],
+            as: 'assignees',
+            include: [
+              {
+                model: User,
+                attributes: ['id', 'firstName', 'lastName', 'email', 'avatar'],
+                as: 'user',
+              },
+            ],
           },
         ],
         order,
@@ -83,7 +137,7 @@ const WorkController = {
         where: {
           id: workId,
         },
-        attributes: ['id', 'title', 'description', 'endDate', 'startDate', 'status'],
+        attributes: ['id', 'title', 'description', 'endDate', 'startDate', 'status', 'isPublic'],
         include: [
           {
             model: User,
@@ -104,6 +158,18 @@ const WorkController = {
             model: db.WorkFileStorage,
             attributes: ['id', 'name', 'link', 'type'],
             as: 'files',
+          },
+          {
+            model: db.WorkAssignee,
+            attributes: ['id'],
+            as: 'assignees',
+            include: [
+              {
+                model: User,
+                attributes: ['id', 'firstName', 'lastName', 'email', 'avatar'],
+                as: 'user',
+              },
+            ],
           },
         ],
       });
@@ -129,7 +195,18 @@ const WorkController = {
     try {
       const user = req.user;
       const { workId } = req.params;
-      const { title, endDate, startDate, importantId, description, sprintId, followerId, status } = req.body;
+      const {
+        title,
+        endDate,
+        startDate,
+        importantId,
+        description,
+        sprintId,
+        followerId,
+        status,
+        isPublic,
+        assigneeIds,
+      } = req.body;
 
       const work = await Work.findOne({
         where: {
@@ -162,6 +239,7 @@ const WorkController = {
         sprintId: sprintId ? +sprintId : work.sprintId,
         followerId: followerId ? +followerId : work.followerId,
         status: status ?? work.status,
+        isPublic: isPublic !== null && isPublic !== undefined ? isPublic : work.isPublic,
       };
 
       const updateWork = await Work.update(workUpdate, {
@@ -172,6 +250,49 @@ const WorkController = {
       });
       if (!updateWork) {
         return res.status(500).json({ message: 'Không thể lưu' });
+      }
+
+      if (assigneeIds) {
+        await db.WorkAssignee.destroy({
+          where: {
+            workId: workId,
+            userId: {
+              [Op.notIn]: assigneeIds,
+            },
+          },
+        });
+
+        const currentAssignees = await db.WorkAssignee.findAll({
+          where: {
+            workId: workId,
+          },
+          attributes: ['userId'],
+        });
+
+        const currentUserIds = currentAssignees.map((assignee) => assignee.userId);
+
+        const newAssignees = assigneeIds
+          .filter((userId) => !currentUserIds.includes(userId))
+          .map((userId) => {
+            return {
+              workId: workId,
+              userId: userId,
+            };
+          });
+
+        if (newAssignees.length > 0) {
+          await db.WorkAssignee.bulkCreate(newAssignees);
+          newAssignees.forEach((assignee) => {
+            NotificationService.createNotification({
+              content: `[${user.firstName} ${user.lastName}] đã thêm bạn vào công việc [${work.title}]`,
+              type: 'work',
+              link: `/workspaces/${work.sprint.workspace.id}/works/${work.id}`,
+              receiverId: assignee.userId,
+              senderId: user.id,
+              workspaceId: work.sprint.workspace.id,
+            });
+          });
+        }
       }
 
       // Lấy danh sách thành viên
@@ -232,7 +353,7 @@ const WorkController = {
         },
       });
       const workDelete = await WorkService.deleteWork(work.id);
-      return res.status(200).json(workDelete);
+      return res.status(200).json({ message: 'Xóa thành công!', success: true });
     } catch (error) {
       console.log(error);
       return res.status(500).json({ message: 'Có lỗi xảy ra!' });
@@ -331,6 +452,45 @@ const WorkController = {
       console.log(error);
       return res.status(500).json({ message: 'Có lỗi xảy ra!' });
     }
+  },
+
+  updateAssignees: async (req, res) => {
+    try {
+      const { workId } = req.params;
+      const { userIds } = req.body;
+
+      await db.WorkAssignee.destroy({
+        where: {
+          workId: workId,
+          userId: {
+            [Op.notIn]: userIds,
+          },
+        },
+      });
+
+      const currentAssignees = await db.WorkAssignee.findAll({
+        where: {
+          workId: workId,
+          attributes: ['userId'],
+        },
+      });
+
+      const currentUserIds = currentAssignees.map((assignee) => assignee.userId);
+
+      const newAssignees = userIds
+        .filter((userId) => !currentUserIds.includes(userId))
+        .map((userId) => {
+          return {
+            workId: workId,
+            userId: userId,
+          };
+        });
+
+      if (newAssignees.length > 0) {
+        await db.WorkAssignee.bulkCreate(newAssignees);
+      }
+      return res.status(200).json({ message: 'Cập nhật thành công!', success: true });
+    } catch (error) {}
   },
 };
 

@@ -1,5 +1,21 @@
 const db = require('../models');
 
+const isWorkspaceMember = async (req, res, next) => {
+  try {
+    const { workspaceId } = req.params;
+    const user = req.user;
+
+    const member = await db.Member.findOne({ where: { userId: user.id, workspaceId } });
+    if (!member) {
+      return res.status(403).json({ message: 'Bạn không có quyền truy cập!' });
+    }
+    next();
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({ message: 'Lỗi truy cập!' });
+  }
+};
+
 const isWorkspaceAdmin = async (req, res, next) => {
   try {
     const { workspaceId } = req.params;
@@ -53,6 +69,7 @@ const canEditSprint = async (req, res, next) => {
 };
 
 module.exports = {
+  isWorkspaceMember,
   isWorkspaceAdmin,
   canCreateSprint,
   canEditSprint,

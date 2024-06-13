@@ -37,6 +37,7 @@ const CommentController = {
           },
         ],
         attributes: ['id', 'content', 'createdAt'],
+        order: [['createdAt', 'DESC']],
       });
 
       if (!comments) {
@@ -46,6 +47,33 @@ const CommentController = {
     } catch (error) {
       console.log(error);
       return res.status(500).json({ message: 'Lỗi truy cập!' });
+    }
+  },
+
+  deleteComment: async (req, res) => {
+    try {
+      const user = req.user;
+      const { commentId } = req.params;
+
+      const comment = await db.Comment.findOne({
+        where: { id: commentId, creatorId: user.id },
+      });
+
+      if (!comment) {
+        return res.status(404).json({ message: 'Không tìm thấy comment' });
+      }
+
+      const deleteComment = await db.Comment.destroy({
+        where: { id: commentId },
+      });
+
+      if (!deleteComment) {
+        return res.status(500).json({ message: 'Xoá comment thất bại' });
+      }
+      return res.status(200).json({ message: 'Xoá comment thành công', success: true });
+    } catch (error) {
+      console.log(error);
+      return res.status(500).json({ message: 'Xoá comment thất bại' });
     }
   },
 };

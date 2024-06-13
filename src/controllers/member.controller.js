@@ -117,6 +117,39 @@ const MemberController = {
       return res.status(500).json({ message: 'Lỗi truy cập!' });
     }
   },
+
+  updateAccessWorkspace: async (req, res) => {
+    try {
+      const user = req.user;
+      const { workspaceId } = req.params;
+      const { accessTime, like } = req.body;
+
+      const m = await Member.findOne({ where: { userId: user.id, workspaceId } });
+
+      if (!m) {
+        res.status(403).json({ message: 'Không tìm thấy member!' });
+      }
+
+      const dataUpdate = {};
+      if (accessTime) {
+        dataUpdate.accessTime = accessTime;
+      }
+      if (like !== null && like !== undefined) {
+        dataUpdate.like = like;
+      }
+
+      const memberUpdate = await Member.update(dataUpdate, { where: { id: m.id } });
+
+      if (!memberUpdate) {
+        return res.status(500).json({ message: 'Có lỗi xảy ra!' });
+      }
+
+      return res.status(200).json({ message: 'Thay đổi thông tin thành công!', success: true });
+    } catch (error) {
+      console.log(error);
+      return res.status(500).json({ message: 'Lỗi truy cập!' });
+    }
+  },
 };
 
 module.exports = MemberController;

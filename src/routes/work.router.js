@@ -12,4 +12,6 @@ router.get('/:workId', WorkController.getWorkById);
 router.post('/:workId/files', canEditWork, WorkController.addFiles);
 router.delete('/:workId/files/:fileId', canEditWork, WorkController.deleteFile);
 
+// Assignee
+router.post('/:workId/assignees', canEditWork, WorkController.updateAssignees);
 module.exports = router;

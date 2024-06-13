@@ -27,6 +27,11 @@ module.exports = {
       description: {
         type: Sequelize.STRING(500),
       },
+      isPublic: {
+        type: Sequelize.BOOLEAN,
+        allowNull: false,
+        defaultValue: true,
+      },
       sprintId: {
         type: Sequelize.INTEGER,
         allowNull: false,

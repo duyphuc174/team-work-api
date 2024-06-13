@@ -1,4 +1,4 @@
-const { Op, where } = require('sequelize');
+const { Op, where, literal } = require('sequelize');
 const db = require('../models');
 const UserService = require('../services/user.service');
 const ErrorService = require('../services/error.service');
@@ -130,6 +130,44 @@ const UserController = {
       return res.status(200).json(u);
     } catch (error) {
       ErrorService.errorResponse(res, error);
+    }
+  },
+
+  getListCommonWorkspaces: async (req, res) => {
+    try {
+      const userLogged = req.user;
+      const { userId } = req.params;
+
+      const user = await db.User.findOne({
+        where: { id: userId },
+        attributes: {
+          exclude: ['password', 'createdAt', 'updatedAt', 'deletedAt', 'roleId'],
+        },
+      });
+      if (!user) {
+        return res.status(400).json('Không tim thấy người dùng!');
+      }
+
+      const commonWorkspaces = await db.Workspace.findAll({
+        include: [
+          {
+            model: db.Member,
+            as: 'members',
+            where: {
+              userId: [userLogged.id, user.id],
+            },
+            attributes: [], // Không cần thuộc tính Member
+          },
+        ],
+        group: ['Workspace.id'],
+        having: literal(`COUNT(DISTINCT \`members\`.\`userId\`) = 2`),
+        attributes: ['id', 'name', 'description'], // Chỉ lấy các thuộc tính cần thiết
+      });
+
+      return res.status(200).json({ user, commonWorkspaces });
+    } catch (error) {
+      console.error(error);
+      return res.status(500).json({ message: 'Có lỗi xảy ra!' });
     }
   },
 };

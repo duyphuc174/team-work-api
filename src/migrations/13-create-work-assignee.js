@@ -2,42 +2,20 @@
 /** @type {import('sequelize-cli').Migration} */
 module.exports = {
   async up(queryInterface, Sequelize) {
-    await queryInterface.createTable('Members', {
+    await queryInterface.createTable('WorkAssignees', {
       id: {
         allowNull: false,
         autoIncrement: true,
         primaryKey: true,
         type: Sequelize.INTEGER,
       },
+      workId: {
+        type: Sequelize.INTEGER,
+        allowNull: false,
+      },
       userId: {
         type: Sequelize.INTEGER,
         allowNull: false,
-        references: {
-          model: 'Users',
-          key: 'id',
-        },
-      },
-      role: {
-        type: Sequelize.STRING(50),
-        allowNull: false,
-        defaultValue: 'member',
-      },
-      accessTime: {
-        type: Sequelize.DATE,
-        allowNull: false,
-        defaultValue: null,
-      },
-      like: {
-        type: Sequelize.BOOLEAN,
-        defaultValue: false,
-      },
-      workspaceId: {
-        type: Sequelize.INTEGER,
-        allowNull: false,
-        references: {
-          model: 'Workspaces',
-          key: 'id',
-        },
       },
       createdAt: {
         allowNull: false,
@@ -56,6 +34,6 @@ module.exports = {
     });
   },
   async down(queryInterface, Sequelize) {
-    await queryInterface.dropTable('Members');
+    await queryInterface.dropTable('WorkAssignees');
   },
 };

@@ -13,6 +13,7 @@ module.exports = (sequelize, DataTypes) => {
       Workspace.belongsTo(models.User, { foreignKey: 'creatorId', targetKey: 'id', as: 'creator' });
       Workspace.hasMany(models.Member, { foreignKey: 'workspaceId', sourceKey: 'id', as: 'members' });
       Workspace.hasMany(models.Notification, { foreignKey: 'workspaceId', sourceKey: 'id', as: 'notifications' });
+      Workspace.hasOne(models.Member, { foreignKey: 'workspaceId', sourceKey: 'id', as: 'myInfo' });
     }
   }
   Workspace.init(
