@@ -3,6 +3,7 @@ const cors = require('cors');
 require('dotenv').config();
 const initRoutes = require('./src/routes');
 require('./src/util/database');
+require('./src/util/schedule');
 
 const PORT = process.env.PORT || 8000;
 
